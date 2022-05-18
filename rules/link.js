@@ -39,6 +39,8 @@ module.exports = ({ extensionURL = '', username = 'Unknown', clientID = '', clie
     return callback(null, user, context);
   }
 
+  var emailLowercase = user.email.toLowerCase();
+
   createStrategy().then(callbackWithSuccess).catch(callbackWithFailure);
 
   function createStrategy() {
@@ -101,8 +103,8 @@ module.exports = ({ extensionURL = '', username = 'Unknown', clientID = '', clie
     return verifyToken(secondAccountToken, config.token.clientSecret)
       .then(function(decodedToken) {
         // Redirect early if tokens are mismatched
-        if (user.email !== decodedToken.email) {
-          console.error(LOG_TAG, 'User: ', decodedToken.email, 'tried to link to account ', user.email);
+        if (emailLowercase !== decodedToken.email.toLowerCase()) {
+          console.error(LOG_TAG, 'User: ', decodedToken.email, 'tried to link to account ', emailLowercase);
           context.redirect = {
             url: buildRedirectUrl(secondAccountToken, context.request.query, 'accountMismatch')
           };
@@ -137,7 +139,7 @@ module.exports = ({ extensionURL = '', username = 'Unknown', clientID = '', clie
           })
           .then(function(_) {
             // TODO: Ask about this
-            console.info(LOG_TAG, 'Successfully linked accounts for user: ', user.email);
+            console.info(LOG_TAG, 'Successfully linked accounts for user: ', emailLowercase);
             return _;
           });
       });
@@ -155,7 +157,7 @@ module.exports = ({ extensionURL = '', username = 'Unknown', clientID = '', clie
       }).map(function(user) {
         return {
           userId: user.user_id,
-          email: user.email,
+          email: emailLowercase,
           picture: user.picture,
           connections: user.identities.map(function(identity) {
             return identity.connection;
@@ -192,7 +194,7 @@ module.exports = ({ extensionURL = '', username = 'Unknown', clientID = '', clie
 
     var userSub = {
       sub: user.user_id,
-      email: user.email,
+      email: emailLowercase,
       base: auth0.baseUrl
     };
 
@@ -203,7 +205,7 @@ module.exports = ({ extensionURL = '', username = 'Unknown', clientID = '', clie
     return apiCall({
       url: config.endpoints.usersByEmailApi,
       qs: {
-        email: user.email
+        email: emailLowercase
       }
     });
   }
